@@ -109,7 +109,7 @@ const updateClock = () => {
     }
     
     // 显示 PAST/TO
-    renderLetters(minutes < 35 ? 'PAST' : 'TO')
+    renderLetters(minutes > 5 && minutes < 35 ? 'PAST' : minutes >= 35 ? 'TO' : '')
 
     // 处理 QUARTER 和 HALF
     if(minute === 3 || minute === 9) {
