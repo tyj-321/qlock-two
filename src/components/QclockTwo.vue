@@ -21,118 +21,114 @@ letters.value.split('').forEach((element: string) => {
     })
 })
 
+function renderLetters(letter: string) {
+  const matchLetter = new RegExp(letter, 'g')
+  const matchResultLetter = letters.value.match(matchLetter)
+  if (matchResultLetter) {
+    const startIndex = letters.value.indexOf(letter)
+    if(!lettersArray.value[startIndex].active) {
+      for (let i = 0; i < letter.length; i++) {
+        lettersArray.value[startIndex + i].active = true
+      }
+    }
+  }
+}
+
 const updateClock = () => {
   const time = new Date()
-  let hours = time.getHours()
+  const hours = time.getHours()
   const minutes = time.getMinutes()
   
   // 重置所有字母的激活状态
   lettersArray.value.forEach(item => item.active = false)
   
   // 设置 "IT IS"
-  const matchIT = /IT/g
-  const matchIS = /IS/g
-  ;[['IT', matchIT], ['IS', matchIS]].forEach(([word, pattern]) => {
-    if (letters.value.match(pattern)) {
-      const startIndex = letters.value.indexOf(word as string)
-      lettersArray.value[startIndex].active = true
-      lettersArray.value[startIndex + 1].active = true
-    }
-  })
+  renderLetters('IT')
+  renderLetters('IS')
 
-  // 原有的时间显示逻辑
-  const matchAM = /AM/g
-  const matchPM = /PM/g
-  const matchResultAM = letters.value.match(matchAM)
-  const matchResultPM = letters.value.match(matchPM)
+  // 处理上午/下午显示
+  const isAM = hours < 12
+  renderLetters(isAM ? 'AM' : 'PM')
 
-  if (hours < 12) {
-    if (matchResultAM) {
-      const startIndex = letters.value.indexOf('AM')
-      lettersArray.value[startIndex].active = true
-      lettersArray.value[startIndex + 1].active = true
-    }
-  } else {
-    if (matchResultPM) {
-      const startIndex = letters.value.indexOf('PM')
-      lettersArray.value[startIndex].active = true
-      lettersArray.value[startIndex + 1].active = true
-    }
-    hours = hours - 12
+  // 处理小时显示
+  let displayHour = hours % 12 || 12
+  if(minutes >= 35) {
+    displayHour = (displayHour + 1) % 12 || 12
   }
+  const hourStr = hourMap[displayHour as keyof typeof hourMap]
 
-  const hour = hourMap[hours as keyof typeof hourMap]
-  const matchHour = new RegExp(hour, 'g')
-  const matchResultHour = letters.value.match(matchHour)
-  if (matchResultHour) {
-    const startIndex = letters.value.indexOf(hour)
-    if(minutes > 0 && minutes <= 30) {
-      for (let i = 0; i < hour.length; i++) {
-        lettersArray.value[startIndex + i].active = true
+  // 处理特殊小时显示位置
+  const renderSpecialHour = () => {
+    if(hourStr === 'TEN') {
+      for (let i = 0; i < 3; i++) {
+        lettersArray.value[99 + i].active = true
       }
-    } else if(minutes > 30 && minutes < 60) {
-      hours = hours + 1
-      const hour = hourMap[hours as keyof typeof hourMap]
-      const matchHour = new RegExp(hour, 'g')
-      const matchResultHour = letters.value.match(matchHour)
-      if (matchResultHour) {
-        const startIndex = letters.value.indexOf(hour)
-        for (let i = 0; i < hour.length; i++) {
-          lettersArray.value[startIndex + i].active = true
-        }
+    } else if(hourStr === 'FIVE') {
+      for (let i = 0; i < 4; i++) {
+        lettersArray.value[70 + i].active = true
       }
-    } else if(minutes === 0) {
-      const matchOClock = /OCLOCK/g
-      const matchResultOClock = letters.value.match(matchOClock)
-      if (matchResultOClock) {
-        const startIndexOClock = letters.value.indexOf('OCLOCK')
-        for (let i = 0; i < 'OCLOCK'.length; i++) {
-          lettersArray.value[startIndexOClock + i].active = true
-        }
-      }
+    } else {
+      renderLetters(hourStr)
     }
   }
 
-  let minute = Math.floor(minutes/5)
+  // 根据不同时间段处理小时显示
+  if(minutes < 35 || minutes >= 50) {
+    renderSpecialHour()
+  } else if(minutes >= 35) {
+    if((hourStr === 'TEN' || hourStr === 'ELEVEN') && minutes > 55) {
+      for (let i = 0; i < 4; i++) {
+        lettersArray.value[70 + i].active = true
+      }
+    } else {
+      renderSpecialHour()
+    }
+  }
+
+  // 处理分钟显示
+  const minute = Math.floor(minutes/5)
   const minuteStr = minuteMap[minute as keyof typeof minuteMap]
-  const matchMinute = new RegExp(minuteStr, 'g')
-  const matchResultMinute = letters.value.match(matchMinute)
-  if (matchResultMinute) {
-    const startIndex = letters.value.indexOf(minuteStr)
-    for (let i = 0; i < minuteStr.length; i++) {
-      lettersArray.value[startIndex + i].active = true
+
+  if(minutes === 0) {
+    renderLetters('OCLOCK')
+  } else {
+    // 处理特殊分钟显示
+    if(hourStr === 'FIVE' && minutes >= 55) {
+      for (let i = 0; i < 4; i++) {
+        lettersArray.value[28 + i].active = true
+      }
+    } else if(minutes >= 35 && minutes < 55) {
+      if((hourStr === 'TEN' || hourStr === 'ELEVEN') && minuteStr === 'TEN') {
+        for (let i = 0; i < 3; i++) {
+          lettersArray.value[99 + i].active = true
+        }
+      }
+      renderLetters(minuteStr)
+    } else {
+      renderLetters(minuteStr)
     }
-    if(minutes >= 5 && minutes < 30) {
-      const matchPast = /PAST/g
-      const matchResultPast = letters.value.match(matchPast)
-      if (matchResultPast) {
-        const startIndexPast = letters.value.indexOf('PAST')
-        for (let i = 0; i < 'PAST'.length; i++) {
-          lettersArray.value[startIndexPast + i].active = true
-        }
-      }
-    } else if(minutes === 30) {
-      const matchPast = /PAST/g
-      const matchResultPast = letters.value.match(matchPast)
-      if (matchResultPast) {
-        const startIndexPast = letters.value.indexOf('PAST')
-        lettersArray.value[startIndexPast].active = true
-      }
-      const matchHalf = /HALF/g
-      const matchResultHalf = letters.value.match(matchHalf)
-      if (matchResultHalf) {
-        const startIndexHalf = letters.value.indexOf('HALF')
-        lettersArray.value[startIndexHalf].active = true
-      }
-    } else if(minutes > 30) {
-      const matchTo = /TO/g
-      const matchResultTo = letters.value.match(matchTo)
-      if (matchResultTo) {
-        const startIndexTo = letters.value.indexOf('TO')
-        for (let i = 0; i < 'TO'.length; i++) {
-          lettersArray.value[startIndexTo + i].active = true
-        }
-      }
+    
+    // 显示 PAST/TO
+    renderLetters(minutes < 35 ? 'PAST' : 'TO')
+
+    // 处理 QUARTER 和 HALF
+    if(minute === 3 || minute === 9) {
+      renderLetters('QUARTER')
+    } else if(minute === 6) {
+      renderLetters('HALF')
+    }
+  }
+
+  // 处理特殊情况的显示
+  if(hourStr === 'TEN' && minuteStr === 'FIVE') {
+    for (let i = 0; i < 3; i++) {
+      lettersArray.value[99 + i].active = true
+    }
+  }
+
+  if(hourStr === 'FIVE' && minuteStr === 'FIVE') {
+    for (let i = 0; i < 4; i++) {
+      lettersArray.value[70 + i].active = true
     }
   }
 }
